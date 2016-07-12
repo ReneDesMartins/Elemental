@@ -1,0 +1,149 @@
+#!/usr/bin/lua
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Initialise the PATH constant - this may be used anywhere within the program, to refer to where the bot is called.
+---------------------------------------------------------------------------------------------------------------------------------------
+PATH	= arg[0]:match("^(.+/)")
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Note that during setup, we throw errors that immediately quit the program. This is to ensure that the program does not start up
+-- in an unstable manner.
+---------------------------------------------------------------------------------------------------------------------------------------
+-- See that all essential configuration files exist. We do this by opening, and immediately closing the file, and seeing if that
+-- raises any errors.
+---------------------------------------------------------------------------------------------------------------------------------------
+
+assert(
+	( pcall( function () return
+		io.open( PATH.."/config/global.lua"	):close() and
+		io.open( PATH.."/config/irc/network.lua" 	):close() and
+		io.open( PATH.."/config/irc/channels.lua"	):close()
+	end)),
+	"One or more configuration files are missing."
+)
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Require the appropriate global configuration file.
+---------------------------------------------------------------------------------------------------------------------------------------
+global_config = require(PATH.."/config/global")		-- 'global' config, related to the loading of modules, libraries, runtime variables, etc.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Load all libraries specified in the configuration.
+---------------------------------------------------------------------------------------------------------------------------------------
+for _,lib in pairs(global_config.lib_load or {}) do
+	require(PATH..lib)
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Setup some debug variables if debug has been enabled:
+---------------------------------------------------------------------------------------------------------------------------------------
+if (edebug) then
+	edebug.start = os.time()
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Load all modules specified in the configuration.
+---------------------------------------------------------------------------------------------------------------------------------------
+for _,module in pairs(global_config.mod_load or {}) do
+	Module:load( module )
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Require the appropriate IRC configuration files.
+---------------------------------------------------------------------------------------------------------------------------------------
+Pid.network_config = require(PATH.."/config/irc/network") -- configuration related to interacting with IRC.
+Pid.channel_config = require(PATH.."/config/irc/channels") -- configuration related to channels on IRC this bot interacts with.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Object preparation
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Before connecting to the network, we must apply the proper compatibility library if specified.
+---------------------------------------------------------------------------------------------------------------------------------------
+
+if ( Pid.network_config.compat_lib ) and ( Pid.network_config.compat_lib ~= "" ) then
+	require( PATH.."/mod/compat/"..Pid.network_config.compat_lib )
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- We also prepare our channel objects:
+---------------------------------------------------------------------------------------------------------------------------------------
+
+for channel_name,channel_obj in pairs( Pid.channel_config.channels ) do
+	Pid.channels[ channel_name ] = Pid.channel:create( channel_name , channel_obj.thread )
+	Pid.channels[ channel_name ].cfg = channel_obj
+
+	for _,sink in pairs( channel_obj.sinks or {} ) do
+		Pid.channels[ channel_name ]:hook_sink( sink )
+	end
+	
+	for _,module_install in pairs( channel_obj.install or {} ) do
+		module_install( Pid.channels[ channel_name ] )
+	end
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- And the global channel:
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Pid.global.cfg = Pid.channel_config.global
+for _,sink in pairs( Pid.global.cfg.sinks or {} ) do
+	Pid.global:hook_sink( sink )
+end
+
+for _,install in pairs( Pid.global.cfg.install or {} ) do
+	install( Pid.global )
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- And finally, the private channel:
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Pid.private.cfg = Pid.channel_config.private
+for _,sink in pairs( Pid.private.cfg.sinks or {} ) do
+	Pid.private:hook_sink( sink )
+end
+
+for _,install in pairs( Pid.private.cfg.install or {} ) do
+	install( Pid.private )
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Setup a 'login timer' that joins the channel after the interval specified in login_wait:
+---------------------------------------------------------------------------------------------------------------------------------------
+
+if ( Pid.network_config.ns_pass ~= "" ) then
+	Pid.timer:add_timer(
+		"nickserv", -- Name of the timer.
+		Pid.network_config.ns_wait, -- Amount of seconds to wait.
+		function (self) self.send:privmsg( self.network_config.ns_recipient , "identify "..self.network_config.ns_pass ) ; print("Sent to NS") end, -- Identify function
+		true -- Do unprime timer after identifying.
+	)
+end
+
+Pid.timer:add_timer( "login" , Pid.network_config.login_wait , Pid.log_in , true )
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Connect to IRC
+---------------------------------------------------------------------------------------------------------------------------------------
+Pid:connect(
+	Pid.network_config.server,
+	Pid.network_config.port
+)
+
+Pid.send:nick(
+	Pid.network_config.nick
+)
+
+Pid.send:user(
+	Pid.network_config.user,
+	Pid.network_config.mode,
+	Pid.network_config.umode,
+	Pid.network_config.rname
+)
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Start the loop - Pid:listen() is an iterator method that handles pings, handles handlers, etc.
+---------------------------------------------------------------------------------------------------------------------------------------
+
+for receive in Pid:listen() do
+	-- Do whatever you require here.
+end
