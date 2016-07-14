@@ -42,7 +42,7 @@ local parseflags = dofile( MODPATH.."/flag.lua" )
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 local function eval_command ( self, chan_ptr, parsed )
-	local prefix,command,rest	= parsed.mesg:match("^(.)([^%s]+)%s*(.*)")
+	local prefix,command,rest = parsed.mesg:match("^(.)([^%s]+)%s*(.*)")
 
 	-- Determine if it is a command to begin with:
 	if ( chan_ptr.prefixes[ prefix ] ) then
@@ -101,7 +101,7 @@ function Command.add_command ( chan_ptr , command )
 	local ident,command= unpack( command )
 	if ( type( ident )  == "table" ) then
 		for _,name in pairs( ident ) do
-			chan_ptr.commands[ name ]  command
+			chan_ptr.commands[ name ] = command
 		end
 	else
 		chan_ptr.commands[ ident ] = command
