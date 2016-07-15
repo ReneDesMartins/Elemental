@@ -49,7 +49,7 @@ function Logging.enable ( chan_ptr )
 	local log_sink = Logging.log_occurrence
 
 	chan_ptr.log_file = io.open( log_file , "a" )
-	chan_ptr.log_format  dofile( MODPATH.."/formats/"..log_form..".lua" )
+	chan_ptr.log_format = dofile( MODPATH.."/formats/"..log_form..".lua" )
 	chan_ptr:hook_sink( log_sink )
 end
 
