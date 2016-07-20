@@ -70,7 +70,6 @@ function Timer:add_timer ( name , time , func , single )
 	assert( time > 0 , "timer interval must be non-zero, and non-negative." )
 	assert( type(func) == "function" , "func must be a function." )
 	
-	print( "Adding Timer "..name )
 	Timers[ name ] = { time , func , single , true , os.time() }
 	Timer:prime( name )
 end
