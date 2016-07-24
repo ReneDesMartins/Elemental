@@ -14,9 +14,9 @@ PATH	= arg[0]:match("^(.+/)")
 
 assert(
 	( pcall( function () return
-		io.open( PATH.."/config/global.lua"	):close() and
-		io.open( PATH.."/config/irc/network.lua" 	):close() and
-		io.open( PATH.."/config/irc/channels.lua"	):close()
+		io.open( PATH.."/config/global.lua" ):close() and
+		io.open( PATH.."/config/irc/network.lua" ):close() and
+		io.open( PATH.."/config/irc/channels.lua" ):close()
 	end)),
 	"One or more configuration files are missing."
 )
@@ -29,21 +29,14 @@ global_config = require(PATH.."/config/global")		-- 'global' config, related to 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Load all libraries specified in the configuration.
 ---------------------------------------------------------------------------------------------------------------------------------------
-for _,lib in pairs(global_config.lib_load or {}) do
+for lib in (global_config.lib_load or ""):gmatch("([^%s]+)") do
 	require(PATH..lib)
-end
-
----------------------------------------------------------------------------------------------------------------------------------------
--- Setup some debug variables if debug has been enabled:
----------------------------------------------------------------------------------------------------------------------------------------
-if (edebug) then
-	edebug.start = os.time()
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Load all modules specified in the configuration.
 ---------------------------------------------------------------------------------------------------------------------------------------
-for _,module in pairs(global_config.mod_load or {}) do
+for module in (global_config.mod_load or ""):gmatch("([^%s]+)") do
 	Module:load( module )
 end
 
