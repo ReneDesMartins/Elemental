@@ -25,6 +25,7 @@
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 local MODPATH = MODPATH
+local commands = setmetatable({}, {__mode="k"})
 local Command = {}
 local parseflags = dofile( MODPATH.."/flag.lua" )
 
@@ -98,13 +99,13 @@ Command.eval_command = {
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 function Command.add_command ( chan_ptr , command )
-	local ident,command= unpack( command )
+	local ident,command = unpack( command )
 	if ( type( ident )  == "table" ) then
-		for _,name in pairs( ident ) do
-			chan_ptr.commands[ name ] = command
+		for _,ident in pairs( ident ) do
+			commands[chan_ptr].commands[ ident ] = command
 		end
 	else
-		chan_ptr.commands[ ident ] = command
+		commands[chan_ptr].commands[ ident ] = command
 	end
 end
 
@@ -133,7 +134,7 @@ function Command.add_prefix ( chan_ptr , prefix )
 end
 
 function Command.remove_prefix ( chan_ptr , prefix )
-	chan_ptr.prefixes[ prefix ] = false
+	chan_ptr.prefixes[ prefix ] = nil
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -154,33 +155,27 @@ end
 --	table:   chan_ptr             Reference to the channel where commands should be disabled.
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-function Command.enable ( chan_ptr )
+function Command.plugin ( chan_ptr )
 
-	chan_ptr.add_command = Command.add_command
-	chan_ptr.remove_command = Command.remove_command
-	chan_ptr.add_prefix = Command.add_prefix
-	chan_ptr.remove_prefix = Command.remove_prefix
-	chan_ptr.commands = setmetatable({},{__mode="v"})
-	chan_ptr.prefixes = {}
+	commands[chan_ptr] = {
+		prefixes = {},
+		commands = setmetatable({},{__mode="v"})
+	}
 
-	for _,command in pairs( (chan_ptr.cfg or {}).commands or {} ) do
-		chan_ptr:add_command( command )
+	for _,command in pairs( (chan_ptr.cfg or {}).commands or {}) do
+		Command.add_command( chan_ptr , command )
 	end
 	
 	for _,prefix in pairs( (chan_ptr.cfg or {}).prefixes or {} ) do
-		chan_ptr:add_prefix( prefix )
+		Command.add_prefix( chan_ptr , prefix )
 	end
 	
 	chan_ptr:hook_sink( Command.eval_command )
 end
 
-function Command.disable ( chan_ptr )
-	chan_ptr.add_command = nil
-	chan_ptr.remove_command = nil
-	chan_ptr.add_prefix = nil
-	chan_ptr.remove_prefix = nil
-	chan_ptr.commands = nil
-	chan_ptr.prefixes = nil
+function Command.remove ( chan_ptr )
+	commands[chan_ptr] = nil
+	collectgarbage()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------
 return Command
