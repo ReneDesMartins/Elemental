@@ -28,7 +28,6 @@ local function calculate (self, chan_ptr, flags, parsed, rest)
 			"do",""                                   ):gsub( -- Remove the 'do' keyword.
 			"while",""                                ):gsub( -- Remove the 'while' keyword.
 			"for",""                                  ):gsub( -- Remove the 'for' keyword.
-			"([a-zA-Z]+)%s([^%(%)%s]+)","%1( %2 )"    ):gsub( -- Allow for function calls without parentheses.
 			"([0-9%)]+)%s*!","fact( %1 )"             ):gsub( -- Add support for the '!' operator as factorial.
 			"%-%-.+$",""										):gsub( -- Remove comments.
 			"huge",""                                 )       -- Remove infinities.
