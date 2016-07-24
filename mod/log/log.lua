@@ -8,6 +8,7 @@
 ---------------------------------------------------------------------------------------------------------------------------------------
 local MODPATH = MODPATH
 local Logging = {}
+local logs = setmetatable({},{__mode="k"})
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Channel sinks
@@ -21,14 +22,32 @@ local Logging = {}
 Logging.log_occurrence = {
 	name = "log_occurrence",
 	sink = function (self,chan_ptr,parsed)
-		chan_ptr.log_file:write(
-			os.date(chan_ptr.log_format.date_format)..chan_ptr.log_format[ parsed.num:lower() ] ( parsed ).."\n"
+		logs[chan_ptr].log_file:write(
+			os.date(logs[chan_ptr].log_format.date_format)..logs[chan_ptr].log_format[ parsed.num:lower() ] ( parsed ).."\n"
 		)
-
-		chan_ptr.log_file:flush()
 	end,
 	list = {PRIVMSG=true,JOIN=true,PART=true,KICK=true,MODE=true,TOPIC=true,QUIT=true,NICK=true},
 	type = 0,
+}
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Flush timer
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Timer: flush
+-- Name : flush
+-- Inter: equal to MODINFO.flush_interval
+-- Desc : flushes the message buffer to file.
+---------------------------------------------------------------------------------------------------------------------------------------
+Logging.flushtime = {
+	time = MODINFO.flush_interval,
+	name = "flush",
+	single = false,
+	func = function ()
+		for _,v in pairs( logs ) do
+			print( "Flush "..tostring( _.name ) )
+			v.log_file:flush()
+		end
+	end,
 }
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -44,12 +63,17 @@ Logging.log_occurrence = {
 --	channel:   chan_ptr           Reference to the channel where logging should be enabled.
 ---------------------------------------------------------------------------------------------------------------------------------------
 function Logging.enable ( chan_ptr )
+	if ( not next( logs ) ) then
+		chan_ptr.__parent.timer:add_timer( Logging.flushtime.name , Logging.flushtime.time , Logging.flushtime.func , Logging.flushtime.single )
+	end
+
+	logs[chan_ptr] = {}
 	local log_file = chan_ptr.cfg.log.file
 	local log_form = chan_ptr.cfg.log.format
 	local log_sink = Logging.log_occurrence
 
-	chan_ptr.log_file = io.open( log_file , "a" )
-	chan_ptr.log_format = dofile( MODPATH.."/formats/"..log_form..".lua" )
+	logs[chan_ptr].log_file = io.open( log_file , "a" )
+	logs[chan_ptr].log_format = dofile( MODPATH.."/formats/"..log_form..".lua" )
 	chan_ptr:hook_sink( log_sink )
 end
 
@@ -65,10 +89,14 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 function Logging.disable ( chan_ptr )
-	chan_ptr.log_file:close()
-	chan_ptr.log_file = nil
-	chan_ptr.log_format = nil
+	logs[chan_ptr].log_file:close()
+	logs[chan_ptr] = nil
+
 	chan_ptr:unhook_sink( "log_occurrence" )
+	
+	if ( not next( logs ) ) then
+		chan_ptr.__parent.timer:remove_timer( Logging.flushtime.name )
+	end
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------

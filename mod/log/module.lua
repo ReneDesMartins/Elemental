@@ -4,4 +4,5 @@ return {
 	version = "v1.0",
 	owner = "Elemental",
 	file = MODPATH.."/log.lua",
+	flush_interval = 120,
 }
