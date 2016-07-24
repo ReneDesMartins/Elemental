@@ -44,7 +44,6 @@ Logging.flushtime = {
 	single = false,
 	func = function ()
 		for _,v in pairs( logs ) do
-			print( "Flush "..tostring( _.name ) )
 			v.log_file:flush()
 		end
 	end,

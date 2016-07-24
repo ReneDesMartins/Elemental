@@ -46,15 +46,15 @@ local function eval_command ( self, chan_ptr, parsed )
 	local prefix,command,rest = parsed.mesg:match("^(.)([^%s]+)%s*(.*)")
 
 	-- Determine if it is a command to begin with:
-	if ( chan_ptr.prefixes[ prefix ] ) then
+	if ( commands[chan_ptr].prefixes[ prefix ] ) then
 
 		-- See if the command exists:
-		if ( chan_ptr.commands[ command ] ) then
+		if ( commands[chan_ptr].commands[ command ] ) then
 
 			-- If it does, parse flags:
 			local flags = parseflags( rest )
 			-- And execute the command:
-			chan_ptr.commands[ command ](self, chan_ptr, flags, parsed, rest)
+			commands[chan_ptr].commands[ command ](self, chan_ptr, flags, parsed, rest)
 		end
 		
 	end
@@ -130,11 +130,11 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 function Command.add_prefix ( chan_ptr , prefix )
-	chan_ptr.prefixes[ prefix ] = true
+	commands[chan_ptr].prefixes[ prefix ] = true
 end
 
 function Command.remove_prefix ( chan_ptr , prefix )
-	chan_ptr.prefixes[ prefix ] = nil
+	commands[chan_ptr].prefixes[ prefix ] = nil
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
