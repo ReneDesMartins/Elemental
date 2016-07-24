@@ -55,13 +55,13 @@ local Timers = {}
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 function Timer:lowest_primed_interval()
-	local lowest = -1
+	lowest = math.huge
 	for _,timer in pairs( Timers ) do
 		lowest = (
-			( timer[1] < lowest ) and timer[1]
+			( timer[4] ) and ( timer[1] < lowest ) and timer[1]
 		) or lowest
 	end
-	return lowest
+	return ( ( lowest ~= math.huge ) and lowest ) or -1
 end
 
 function Timer:add_timer ( name , time , func , single )
