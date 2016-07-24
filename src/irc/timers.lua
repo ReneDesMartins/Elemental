@@ -55,13 +55,13 @@ local Timers = {}
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 function Timer:lowest_primed_interval()
-	local highest = -1
+	local lowest = -1
 	for _,timer in pairs( Timers ) do
-		highest = (
-			( timer[1] > highest ) and timer[1]
-		) or highest
+		lowest = (
+			( timer[1] < lowest ) and timer[1]
+		) or lowest
 	end
-	return highest
+	return lowest
 end
 
 function Timer:add_timer ( name , time , func , single )
@@ -70,7 +70,6 @@ function Timer:add_timer ( name , time , func , single )
 	assert( time > 0 , "timer interval must be non-zero, and non-negative." )
 	assert( type(func) == "function" , "func must be a function." )
 	
-	print( "Adding Timer "..name )
 	Timers[ name ] = { time , func , single , true , os.time() }
 	Timer:prime( name )
 end
