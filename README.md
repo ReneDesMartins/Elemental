@@ -11,29 +11,21 @@ Edit the 'elemental' executable to have it use the proper Lua5.1 interpreter.
 
 Note: since all configuration files are Lua scripts, they should adhere to the Lua syntax, or an error will be raised.
 
-```lua
-	table = {
-		field = value,
-		field = "value",
-		field = "value\"",
-		field = 1141113,
-		field = "concatenate".."strings",
-	}
-```
 The 'PATH' variable may be used in any configuration file, to retrieve the relative path to where Elemental was executed:
 ```lua
 	PATH.."/logs/my_logfile",
 ```
 
 Edit the cfg/global.lua configuration file. Double-check the loadlists lib_load and mod_load.
-Conventionally, lib_load needn't be modified. The mod_load table must contain strings that correspond with the names of the directories in the mod/ folder belonging to the modules
-you wish to load. Elemental will look for a module.lua file in the specified directory, and continue from there. Modules are loaded in order of which string was specified first in
-the table. Because of this, do note that modules must be loaded in order with every modules' dependencies; if a module depends on another module, then that dependency must be loaded first.
+Conventionally, lib_load needn't be modified. The mod_load string msut contain paths that correspond with the names of the directories in the mod/ folder belonging to the modules
+you wish to load. Elemental will look for a module.lua file in the specified directory, and continue from there. Modules are loaded in order of which path comes first in the
+string. Because of this, do note that modules must be loaded in order with every modules' dependencies; if a module depends on another module, then that dependency precede this
+module.
 
 Edit the cfg/irc/network.lua configuration file, and enter the proper server, port, etc.
 As is stated, the 'compat_lib' variable is to specify which 'compatibility library' is to be loaded.
 Elemental remains (mostly) RFC2812 compliant. This means that channel modes such as +h (halfop) and +a (admin) may not be present on every server, among other differences.
-The 'compat_lib' variable is a string to the file name (EXCLUDING .lua extension) in the mod/compat/ directory.
+The 'compat_lib' variable is a string to the file name (excluding .lua extension) in the mod/compat/ directory.
 
 Edit the cfg/irc/channels.lua configuration file, and configure the behaviour of every channel. The 'private' channel corresponds to messages sent in private (not
 through a channel), while the 'global' channel handles each and every message received from the server.
@@ -43,49 +35,25 @@ To add a channel, declare a new table in the 'channels' register, with the chann
 	channels["#my_channel"]	= {}
 ```
 Next, we may add fields to this channel's table, to further elaborate on it's behaviour.
-The default fields are 'sinks' and 'install'. Some modules may require you to specify additional configuration, such as log file locations, commands, etc.
+Some modules may require you to specify additional configuration, such as log file locations, commands, etc.
 These additional fields are elaborated upon by that modules' documentation.
 
 Since the configuration files are raw lua code, we can circumvent the need to write out 'channels["#my_channel"]' time and time again, by creating a reference to it:
 ```lua
 	local my_chan = channels["#my_channel"]
 
-	my_chan.sinks = {}
-	my_chan.install = {}
+	my_chan.plugins = ""
 ```
 Note the presence of the 'local' keyword. If this keyword is omitted, then 'my_chan' will be assigned globally, which is not desireable.
-To add entries to the specified fields, one may do the following:
-```lua
-	my_chan.sinks = {}
-	my_chan.sinks[1] = Modules.print.channel
-	my_chan.sinks[2] = Modules.some_sink.etc
-```
-One may also use the following notation:
-```lua
-	my_chan.sinks = {
-		Modules.print.channel,
-		Modules.some_sink.etc,
-	}
-```
-All sinks specified in the 'sinks' table will be hooked to the channel.
-Sometimes, for a module to work, a channel object may need to be directly modified (by the adding of fields, etc.)
-For this, some modules have a function that modifies the channel in this way. These functions shall be called 'installers' for convenience.
-The 'install' table must contain references to an installer. Elemental will run each installer, passing the respective channel object to it.
-```lua
-	my_chan.install = {
-		Modules.command.enable,
-		Modules.log.enable,
-	}
-```
-Commonly, the install function is named 'install', 'enable', or something similar.
-It is not an uncommon occurrence that installers hook one or more sinks to the channel by themselves. This shall be noted in the modules' respective documentation.
+Conventially, a field is a string, containing a space-separated list of entries.
 
-One needn't specify numbers as table indices. One can also specify strings for readability:
+You can modify a channels' behaviour by supplying plugins (which should, in turn, be offered by external modules) to the channel. The 'plugins' list contains a space-separated
+row of plugin specifications. A plugin specification is a string of alphabetical characters resembling the modules' name, with an optional install specifier. (
+*module_name*.*plugin* ). The install specifier defaults to 'plugin'. Consult the respective modules' documentation for information.
 ```lua
-	my_chan.install = {}
-	my_chan.install.command = Modules.command.enable
-	my_chan.install.log = Modules.log.enable
+	my_chan.plugins = "print.channel command"
 ```
+All plugins specified in the 'plugins' table will be applied to the channel.
 
 Now, run Elemental:
 ```

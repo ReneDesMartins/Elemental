@@ -64,12 +64,9 @@ for channel_name,channel_obj in pairs( Pid.channel_config.channels ) do
 	Pid.channels[ channel_name ] = Pid.channel:create( channel_name , channel_obj.thread )
 	Pid.channels[ channel_name ].cfg = channel_obj
 
-	for _,sink in pairs( channel_obj.sinks or {} ) do
-		Pid.channels[ channel_name ]:hook_sink( sink )
-	end
-	
-	for _,module_install in pairs( channel_obj.install or {} ) do
-		module_install( Pid.channels[ channel_name ] )
+	for plugin in (channel_obj.plugins or ""):gmatch("([^%s]+)") do
+		local mod,value = plugin:match("([^%.]+)%.?(.*)")
+		Modules[mod][ ((value ~= "") and value) or "plugin"]( Pid.channels[ channel_name ] )
 	end
 end
 
@@ -78,12 +75,10 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 Pid.global.cfg = Pid.channel_config.global
-for _,sink in pairs( Pid.global.cfg.sinks or {} ) do
-	Pid.global:hook_sink( sink )
-end
 
-for _,install in pairs( Pid.global.cfg.install or {} ) do
-	install( Pid.global )
+for plugin in (Pid.global.cfg.plugins or ""):gmatch("([^%s]+)") do
+	local mod,value = plugin:match("([^%.]+)%.?(.*)")
+	Modules[mod][ ((value ~= "") and value ) or "plugin"]( Pid.global )
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -91,13 +86,11 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 Pid.private.cfg = Pid.channel_config.private
-for _,sink in pairs( Pid.private.cfg.sinks or {} ) do
-	Pid.private:hook_sink( sink )
+for plugin in (Pid.private.cfg.plugins or ""):gmatch("([^%s]+)") do
+	local mod,value = plugin:match("([^%.]+)%.?(.*)")
+	Modules[mod][ ((value ~= "") and value ) or "plugin"]( Pid.private )
 end
 
-for _,install in pairs( Pid.private.cfg.install or {} ) do
-	install( Pid.private )
-end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Setup a 'login timer' that joins the channel after the interval specified in login_wait:
@@ -107,7 +100,7 @@ if ( Pid.network_config.ns_pass ~= "" ) then
 	Pid.timer:add_timer(
 		"nickserv", -- Name of the timer.
 		Pid.network_config.ns_wait, -- Amount of seconds to wait.
-		function (self) self.send:privmsg( self.network_config.ns_recipient , "identify "..self.network_config.ns_pass ) ; print("Sent to NS") end, -- Identify function
+		function (self) self.send:privmsg( self.network_config.ns_recipient , "identify "..self.network_config.ns_pass ) end, -- Identify function
 		true -- Do unprime timer after identifying.
 	)
 end

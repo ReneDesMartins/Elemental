@@ -21,7 +21,7 @@
 -- List:	PRIVMSG, JOIN, PART, KICK, MODE, TOPIC
 -- Desc:	Prints the message as a channel message,
 ---------------------------------------------------------------------------------------------------------------------------------------
-local global = {
+local global_print = {
 	name = "print",
 	sink = function (self,chan_ptr,parsed)
 		print("[<][Global] "..parsed.str)
@@ -30,7 +30,7 @@ local global = {
 	type = 1,
 }
 
-local channel = {
+local channel_print = {
 	name = "print",
 	sink = function (self,chan_ptr,parsed)
 		print("[<]["..chan_ptr.name.."] "..parsed.str)
@@ -38,6 +38,18 @@ local channel = {
 	list = {PRIVMSG=true,JOIN=true,PART=true,KICK=true,MODE=true,TOPIC=true},
 	type = 0,
 }
+
+local function channel ( chan_ptr )
+	chan_ptr:hook_sink( channel_print )
+end
+
+local function global ( chan_ptr )
+	chan_ptr:hook_sink( global_print )
+end
+
+local function plugout ( chan_ptr )
+	chan_ptr:unhook_sink( "print" )
+end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 return {

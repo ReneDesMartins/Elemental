@@ -52,7 +52,7 @@ Logging.flushtime = {
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Utility functions
 ---------------------------------------------------------------------------------------------------------------------------------------
--- Method:	Logging.enable()
+-- Method:	Logging.plugin()
 -- Enables the logging of channel occurrences by:
 -- 	- Opening a file, and assigning it to the log_file field,
 -- 	- Selecting a log format, and assigning a reference to it to the log_format field,
@@ -61,14 +61,14 @@ Logging.flushtime = {
 -- Parameters:
 --	channel:   chan_ptr           Reference to the channel where logging should be enabled.
 ---------------------------------------------------------------------------------------------------------------------------------------
-function Logging.enable ( chan_ptr )
+function Logging.plugin ( chan_ptr )
 	if ( not next( logs ) ) then
 		chan_ptr.__parent.timer:add_timer( Logging.flushtime.name , Logging.flushtime.time , Logging.flushtime.func , Logging.flushtime.single )
 	end
 
 	logs[chan_ptr] = {}
-	local log_file = chan_ptr.cfg.log.file
-	local log_form = chan_ptr.cfg.log.format
+	local log_file = chan_ptr.cfg.log_file
+	local log_form = chan_ptr.cfg.log_format
 	local log_sink = Logging.log_occurrence
 
 	logs[chan_ptr].log_file = io.open( log_file , "a" )
@@ -77,7 +77,7 @@ function Logging.enable ( chan_ptr )
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
--- Method:	Logging.disable()
+-- Method:	Logging.plugout()
 -- Disables the logging of channel occurrences by:
 --    - Closing the log_file,
 --    - Removing the log format reference,
@@ -87,7 +87,7 @@ end
 --	channel:   chan_ptr           Reference to the channel where logging should be disabled.
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-function Logging.disable ( chan_ptr )
+function Logging.plugout ( chan_ptr )
 	logs[chan_ptr].log_file:close()
 	logs[chan_ptr] = nil
 

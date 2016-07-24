@@ -162,18 +162,19 @@ function Command.plugin ( chan_ptr )
 		commands = setmetatable({},{__mode="v"})
 	}
 
-	for _,command in pairs( (chan_ptr.cfg or {}).commands or {}) do
-		Command.add_command( chan_ptr , command )
+	for command in ( (chan_ptr.cfg or {}).commands or ""):gmatch("([^%s]+)") do
+		local mod,value = command:match("([^%.]+)%.?(.*)")
+		Command.add_command( chan_ptr , Modules[ mod ][ value ] )
 	end
-	
-	for _,prefix in pairs( (chan_ptr.cfg or {}).prefixes or {} ) do
+
+	for prefix in ( (chan_ptr.cfg or {}).prefixes or ""):gmatch(".") do
 		Command.add_prefix( chan_ptr , prefix )
 	end
-	
+
 	chan_ptr:hook_sink( Command.eval_command )
 end
 
-function Command.remove ( chan_ptr )
+function Command.plugout ( chan_ptr )
 	commands[chan_ptr] = nil
 	collectgarbage()
 end

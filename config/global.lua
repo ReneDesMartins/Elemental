@@ -5,5 +5,5 @@ return {
 
 	-- All modules that have to be loaded before starting.
 	-- Just supply the name of the directory in mod/
-	mod_load="print log command_mod commands/eval commands/syn"
+	mod_load=""
 }
